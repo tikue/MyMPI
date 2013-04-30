@@ -76,29 +76,33 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
         
         for (int i = 0; i < k; i++) {
             point *tosend = kmeans[i];
-            int count = counts[i], total = 0;
-            printf("%d\n", count);
-            float x, y;
+            int count = counts[i];
+            int total[numprocs];
             for (int j = 0; j < count; j++) {
                 point sendpt = tosend[j];
                 xs[j] = sendpt.x;
                 ys[j] = sendpt.y;
             }
-            MPI_Reduce(&count, &total, 1, MPI_INT, MPI_SUM, 0,
+            MPI_Reduce(&count, total, 1, MPI_INT, MPI_SUM, 0,
                     MPI_COMM_WORLD);
-            MPI_Reduce(xs, &x, count, MPI_FLOAT, MPI_SUM, 0,
+            MPI_Reduce(xs, allxs, count, MPI_FLOAT, MPI_SUM, 0,
                     MPI_COMM_WORLD);
-            MPI_Reduce(ys, &y, count, MPI_FLOAT, MPI_SUM, 0,
+            MPI_Reduce(ys, allys, count, MPI_FLOAT, MPI_SUM, 0,
                     MPI_COMM_WORLD);
             
             if (!rank) {
-                x /= total;
-                y /= total;
+                int cluster = total[0];
+                if (cluster == 0)
+                    continue;
+                float x = allxs[0] / cluster;
+                float y = allys[0] / cluster;
                 point mean = means[i];
                 if (x != mean.x || y != mean.y) {
                     changed = 1;
-                    mean.x = x;
-                    mean.y = y;
+                    means[i] = (point) {
+                        .x = x,
+                        .y = y
+                    };
                 }
             }
         }

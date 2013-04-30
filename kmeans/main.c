@@ -4,6 +4,11 @@
 #include <mpi.h>
 #include "kmeans.h"
 
+void usage(char *name) {
+    printf("Usage: %s [-k <k>] [-r <range>] [-l <linelen>] "
+            "[-n <numlines>] [-f <filename>]\n", name);
+}
+
 int main(int argc, char *argv[]) {
     // MPI vars
     int numprocs, rank, namelen;
@@ -18,10 +23,10 @@ int main(int argc, char *argv[]) {
 
     // getopt vars
     char opt;
-    int k = 5, linelen = 32, numlines = 100, range = 100;
+    int k = 10, linelen = 32, numlines = 300, range = 100;
     char *filename = "data.txt";
 
-    while ((opt = getopt(argc, argv, "k:r:l:n:f:")) != EOF) {
+    while ((opt = getopt(argc, argv, "k:r:l:n:f:h")) != EOF) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
@@ -35,8 +40,10 @@ int main(int argc, char *argv[]) {
         case 'f':
             filename = optarg;
             break;
+        case 'h':
         default:
-            printf("Usage: %s -k <k> -f <filename>\n", argv[0]);
+            usage(argv[0]);
+            MPI_Finalize();
             return 0;
         }
     }
@@ -46,6 +53,7 @@ int main(int argc, char *argv[]) {
         .numlines = numlines,
         .filename = filename
     };
+
     kmeans(rank, numprocs, k, info);
     MPI_Finalize();
     exit(0);
