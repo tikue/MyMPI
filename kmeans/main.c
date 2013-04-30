@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <mpi.h>
+#include "kmeans.h"
 
 int main(int argc, char *argv[]) {
     // MPI vars
@@ -14,18 +15,23 @@ int main(int argc, char *argv[]) {
     MPI_Get_processor_name(processor_name, &namelen);
 
     printf("Process %d on %s out of %d\n", rank, processor_name, numprocs);
-    MPI_Finalize();
 
     // getopt vars
     char opt;
-    int k = 5;
+    int k = 5, linelen = 32, numlines = 100, range = 100;
     char *filename = "data.txt";
 
-    while ((opt = getopt(argc, argv, "k:f:")) != EOF) {
+    while ((opt = getopt(argc, argv, "k:r:l:n:f:")) != EOF) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
             break;
+        case 'r':
+            range = atoi(optarg);
+        case 'l':
+            linelen = atoi(optarg);
+        case 'n':
+            numlines = atoi(optarg);
         case 'f':
             filename = optarg;
             break;
@@ -34,5 +40,13 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+    fileinfo info = {
+        .range = range,
+        .linelen = linelen,
+        .numlines = numlines,
+        .filename = filename
+    };
+    kmeans(rank, numprocs, k, info);
+    MPI_Finalize();
     exit(0);
 }

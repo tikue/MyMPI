@@ -1,12 +1,13 @@
 CC=mpicc
 OBJDIR := obj
 OBJS := $(addprefix $(OBJDIR)/, kmeans.o main.o)
+CFLAGS := -std=c99
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $< -c -o $@
+	$(CC) $(CFLAGS) $< -c -o $@
 
 kmeans: $(OBJS)
-	$(CC) $^ -o kmeans
+	$(CC) $(CFLAGS) $^ -o kmeans
 
 $(OBJS): | $(OBJDIR)
 
