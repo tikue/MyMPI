@@ -2,63 +2,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <math.h>
 #include <mpi.h>
-#include "kmeans.h"
+#include "mpi_kmeans.h"
 
 int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
-    // initialize means to random values
-    point means[k];
-    initmeans(k, means, rank, info.range);
-    sendmeans(k, means, rank, info.range);
-
-    // read in data points
+    // read in data points and initialize means
     point allpoints[info.numlines];
-    float allxs[info.numlines], allys[info.numlines];
+    point means[k];
     if (!rank) {
         initpoints(allpoints, info);
-        point p;
-        for (int i = 0; i < info.numlines; i++) {
-            p = allpoints[i];
-            allxs[i] = p.x;
-            allys[i] = p.y;
-        }
+        initmeans(k, means, info.numlines, allpoints);
     }
+    sendmeans(k, means, rank);
 
     // scatter the data
-    int sendcnts[numprocs], displs[numprocs];
-    getsendcnts(sendcnts, info.numlines, numprocs);
-    getdispls(displs, sendcnts, numprocs);
-    int recvcnt = sendcnts[rank];
+    int remainder = info.numlines % numprocs;
+    int recvcnt = info.numlines / numprocs + (rank < remainder ? 1:0);
     point points[recvcnt];
-    float xs[recvcnt], ys[recvcnt];
-    MPI_Scatterv(allxs, sendcnts, displs, MPI_FLOAT, xs, recvcnt,
-                MPI_FLOAT, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(allys, sendcnts, displs, MPI_FLOAT, ys, recvcnt,
-                MPI_FLOAT, 0, MPI_COMM_WORLD);
-
-    // construct the point arrays
-    for (int i = 0; i < recvcnt; i++)
-        points[i] = (point) {
-            .x = xs[i],
-            .y = ys[i]
-        };
+    scatterdata(allpoints, info.numlines, points, recvcnt, numprocs, rank);
 
     // iterate
-    point rootkmeans[k][info.numlines];
-    point kmeans[k][recvcnt];
-    int counts[k];
     int changed;
-
     do {
         changed = 0;
+        point rootkmeans[k][info.numlines];
+        point kmeans[k][recvcnt];
+        int counts[k];
         memset(rootkmeans, 0, sizeof(rootkmeans));
         memset(kmeans, 0, sizeof(kmeans));
         memset(counts, 0, sizeof(counts));
 
-        // calculate $recvcnt distances
+        // calculate recvcnt distances
         for (int i = 0; i < recvcnt; i++) {
             point p = points[i];
             int closest = 0;
@@ -74,31 +52,34 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
             kmeans[closest][counts[closest]++] = p;
         }
         
+        // reduce clusters to centroids
         for (int i = 0; i < k; i++) {
-            point *tosend = kmeans[i];
+            point *meani = kmeans[i];
             int count = counts[i];
-            int total[numprocs];
+            int cluster;
+            MPI_Allreduce(&count, &cluster, 1, MPI_INT, MPI_SUM,
+                    MPI_COMM_WORLD);
+
+            float x = 0, y = 0;
             for (int j = 0; j < count; j++) {
-                point sendpt = tosend[j];
-                xs[j] = sendpt.x;
-                ys[j] = sendpt.y;
+                point pt = meani[j];
+                x += pt.x;
+                y += pt.y;
             }
-            MPI_Reduce(&count, total, 1, MPI_INT, MPI_SUM, 0,
-                    MPI_COMM_WORLD);
-            MPI_Reduce(xs, allxs, count, MPI_FLOAT, MPI_SUM, 0,
-                    MPI_COMM_WORLD);
-            MPI_Reduce(ys, allys, count, MPI_FLOAT, MPI_SUM, 0,
-                    MPI_COMM_WORLD);
+            float sum_x;
+            MPI_Reduce(&x, &sum_x, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+            float sum_y;
+            MPI_Reduce(&y, &sum_y, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
             
             if (!rank) {
-                int cluster = total[0];
-                if (cluster == 0)
-                    continue;
-                float x = allxs[0] / cluster;
-                float y = allys[0] / cluster;
+                float x = sum_x / cluster;
+                float y = sum_y / cluster;
                 point mean = means[i];
                 if (x != mean.x || y != mean.y) {
                     changed = 1;
+                    printf("updating mean[%d]: (%f, %f)-->(%f, %f)\n",
+                        i, mean.x, mean.y, x, y);
                     means[i] = (point) {
                         .x = x,
                         .y = y
@@ -107,24 +88,35 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
             }
         }
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        sendmeans(k, means, rank, info.range);
-        for (int i = 0; i < k; i++)
-            printf("(%f, %f) ", means[i].x, means[i].y);
-        printf("\n");
+        sendmeans(k, means, rank);
+        if (!rank) {
+            for (int i = 0; i < k; i++)
+                printf("%d:(%f, %f)\n", i, means[i].x, means[i].y);
+            printf("\n");
+        }
     } while (changed);
+    if (!rank)
+        printf("done.\n");
 }
 
-void initmeans(int k, point *means, int rank, int range) {
-    if (!rank) {
-        for (int i = 0; i < k; i++)
-            means[i] = (point) {
-                .x = rand() % range,
-                .y = rand() % range
-            };
+void initmeans(int k, point *means, int total, point *all) {
+    srand(time(NULL));
+    for (int i = 0; i < k; i++) {
+        point p = all[rand() % total];
+        means[i] = (point) {
+            .x = p.x,
+            .y = p.y
+        };
     }
+    printf("initmeans:\n");
+    for (int i = 0; i < k; i++) {
+        point mean = means[i];
+        printf("(%f, %f)\n", mean.x, mean.y);
+    }
+    printf("\n");
 }
 
-void sendmeans(int k, point *means, int rank, int range) {
+void sendmeans(int k, point *means, int rank) {
     float xs[k], ys[k];
     point mean;
     if (!rank)
@@ -167,6 +159,33 @@ int initpoints(point *points, fileinfo info) {
     return 0;
 }
 
+void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
+    int sendcnts[np], displs[np];
+    getsendcnts(sendcnts, sum, np);
+    getdispls(displs, sendcnts, np);
+    float allxs[sum], allys[sum];
+    if (!rank) {
+        point p;
+        for (int i = 0; i < sum; i++) {
+            p = all[i];
+            allxs[i] = p.x;
+            allys[i] = p.y;
+        }
+    }
+    float xs[cnt], ys[cnt];
+    MPI_Scatterv(allxs, sendcnts, displs, MPI_FLOAT, xs, cnt,
+                MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(allys, sendcnts, displs, MPI_FLOAT, ys, cnt,
+                MPI_FLOAT, 0, MPI_COMM_WORLD);
+    
+    // construct the point arrays
+    for (int i = 0; i < cnt; i++)
+        pts[i] = (point) {
+            .x = xs[i],
+            .y = ys[i]
+        };
+}
+    
 void getsendcnts(int *sendcnts, int numlines, int numprocs) {
     int sendcnt = numlines / numprocs;
     int leftovers = numlines % numprocs;
