@@ -11,6 +11,7 @@ typedef struct fileinfo_s {
     const char *filename;
 } fileinfo;
 
+int in(int n, int *a, int t);
 int kmeans(int rank, int numprocs, int k, fileinfo info);
 void initmeans(int k, point *means, int total, point *all);
 void sendmeans(int k, point *means, int rank);

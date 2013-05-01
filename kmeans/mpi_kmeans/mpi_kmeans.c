@@ -101,8 +101,17 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
 void initmeans(int k, point *means, int total, point *all) {
     srand(time(NULL));
+    int meanis[k];
+    memset(meanis, -1, k);
+
     for (int i = 0; i < k; i++) {
-        point p = all[rand() % total];
+        int index = rand() % total;
+        if (k < total)
+            while (in(k, meanis, index))
+                index = rand() % total;
+            
+        point p = all[index];
+        meanis[i] = index;
         means[i] = (point) {
             .x = p.x,
             .y = p.y
@@ -114,6 +123,13 @@ void initmeans(int k, point *means, int total, point *all) {
         printf("(%f, %f)\n", mean.x, mean.y);
     }
     printf("\n");
+}
+
+int in(int n, int *a, int t) {
+    for (int i = 0; i < n; i++)
+        if (a[i] == t)
+            return 1;
+    return 0;
 }
 
 void sendmeans(int k, point *means, int rank) {
