@@ -1,4 +1,4 @@
-CC=mpic++
+CC=mpicc
 OBJDIR := obj
 OBJS := $(addprefix $(OBJDIR)/, kmeans.o main.o)
 CFLAGS := -std=c++0x
