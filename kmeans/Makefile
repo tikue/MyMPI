@@ -1,7 +1,7 @@
 CC=mpic++
 OBJDIR := obj
 OBJS := $(addprefix $(OBJDIR)/, kmeans.o main.o)
-CFLAGS := -std=c99
+CFLAGS := -std=c++0x
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
