@@ -5,7 +5,7 @@
 #include "mpi_kmeans.h"
 
 void usage(char *name) {
-    printf("Usage: %s [-k <k>] [-r <range>] [-l <linelen>] "
+    printf("Usage: %s [-k <k>] [-l <linelen>] "
             "[-n <numlines>] [-f <filename>]\n", name);
 }
 
@@ -23,16 +23,14 @@ int main(int argc, char *argv[]) {
 
     // getopt vars
     char opt;
-    int k = 9, linelen = 32, numlines = 300, range = 10;
+    int k = 9, linelen = 32, numlines = 300;
     char *filename = "data.txt";
 
-    while ((opt = getopt(argc, argv, "k:r:l:n:f:h")) != EOF) {
+    while ((opt = getopt(argc, argv, "k:l:n:f:h")) != EOF) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
             break;
-        case 'r':
-            range = atoi(optarg);
         case 'l':
             linelen = atoi(optarg);
         case 'n':
