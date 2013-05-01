@@ -38,7 +38,7 @@ def handleArgs(args):
     numClusters = -1
     numStrands = -1
     output = None
-    numBases = 20
+    numBases = 100
 
     try:
         optlist, args = getopt.getopt(args[1:], 'c:p:v:o:')
@@ -91,7 +91,7 @@ for i in range(0, numClusters):
 # step 2: generate the points for each centroid
 points = []
 minClusterVar = 0
-maxClusterVar = 3
+maxClusterVar = 10
 with open(output, 'w') as f:
     for i in range(0, numClusters):
         # compute the variance for this cluster
