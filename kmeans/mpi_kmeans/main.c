@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <assert.h>
 #include <mpi.h>
 #include "mpi_kmeans.h"
 
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+    assert(numlines > k);
     fileinfo info = {
         .linelen = linelen,
         .numlines = numlines,
