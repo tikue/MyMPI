@@ -1,2 +1,2 @@
 #!/bin/bash
-mpirun -np 4 -hostfile hosts ./mpi_kmeans
+mpirun -np 8 -hostfile hosts ./mpi_kmeans

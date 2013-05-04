@@ -77,8 +77,6 @@ numPoints, \
 output, \
 maxValue = handleArgs(sys.argv)
 
-writer = csv.writer(open(output, "w"))
-
 # step 1: generate each 2D centroid
 centroids_radii = []
 minDistance = 0
@@ -93,13 +91,14 @@ for i in range(0, numClusters):
 points = []
 minClusterVar = 0
 maxClusterVar = 0.5
-for i in range(0, numClusters):
-    # compute the variance for this cluster
-    variance = numpy.random.uniform(minClusterVar, maxClusterVar)
-    cluster = centroids_radii[i]
-    for j in range(0, numPoints):
-        # generate a 2D point with specified variance
-        # point is normally-distributed around centroids[i]
-        x, y = numpy.random.normal(cluster, variance)
-        # write the points out
-        writer.writerow([x, y])
+with open(output, 'w') as f:
+    for i in range(0, numClusters):
+        # compute the variance for this cluster
+        variance = numpy.random.uniform(minClusterVar, maxClusterVar)
+        cluster = centroids_radii[i]
+        for j in range(0, numPoints):
+            # generate a 2D point with specified variance
+            # point is normally-distributed around centroids[i]
+            x, y = numpy.random.normal(cluster, variance)
+            # write the points out
+            f.write('{:15.10f},{:15.10f}\n'.format(x, y))
