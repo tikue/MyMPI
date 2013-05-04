@@ -114,6 +114,9 @@ template <class DataType> void SeqKmeans<DataType>::kmeans() {
 		cout << endl;
 	    }
             centroids[j] = DataType::getMean(clusters[j]);
+	    cout << "centroid: ";
+	    centroids[j].printSelf();
+	    cout << endl;
         }
 	cout << endl;
     } while (delta > tolerance);;
