@@ -85,7 +85,7 @@ DNAStrand DNAStrand::getMean(vector<DNAStrand> strands) {
 			c = 'T';
 		}
 		newstrand.strand.append(1, c);
-		cout << newstrand.strand << endl;
+		//cout << newstrand.strand << endl;
 	}
 	return newstrand;
 }
