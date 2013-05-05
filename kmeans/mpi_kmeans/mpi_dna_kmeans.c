@@ -152,6 +152,7 @@ void initdnameans(int k, char* means, int total, char *all) {
             
         meanis[i] = index;
 	memcpy(means+i*dnalen, all+index*dnalen, (dnalen)*sizeof(char));
+	printf("%s\n", means+i*dnalen);
 	
     }
     printf("initmeans:\n");
