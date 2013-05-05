@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     int k = 20, linelen = 32, numlines = 400;
     char *filename = "input/points.txt";
 
-    while ((opt = getopt(argc, argv, "k:l:n:f:p:d:h")) != EOF) {
+    while ((opt = getopt(argc, argv, "k:l:n:f:pdh")) != EOF) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
