@@ -45,11 +45,7 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
         
         // reduce clusters to centroids
         changed = update_means(k, means, partialmeans, counts, rank);
-
-        MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        sendmeans(k, means, rank);
-        //if (!rank) printmeans(k, means, 0);
-    } while (changed && ++iters < 100);
+    } while (changed && ++iters < 200);
     //if (!rank) printmeans(k, means, 1);
     if (!rank) printf("iters: %d, ", iters);
 
@@ -92,26 +88,24 @@ int update_means(int k, point *means, point *partials, int *counts, int rank) {
     point newmeans[k];
 
     MPI_Allreduce(counts, clusters, k, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Reduce(partials, newmeans, 2 * k, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(partials, newmeans, 2*k, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
     for (int i = 0; i < k; i++) {
         int cluster = clusters[i];
         if (!cluster)
             continue;
 
-        if (!rank) {
-            point mean;
-            memcpy(mean, means[i], sizeof(mean));
+        point mean;
+        memcpy(mean, means[i], sizeof(mean));
 
-            float x = newmeans[i][0] / cluster;
-            float y = newmeans[i][1] / cluster;
+        float x = newmeans[i][0] / cluster;
+        float y = newmeans[i][1] / cluster;
 
-            if (x != mean[0] || y != mean[1]) {
-                changed = 1;
-                mean[0] = x;
-                mean[1] = y;
-                memcpy(means[i], mean, sizeof(mean));
-            }
+        if (x != mean[0] || y != mean[1]) {
+            changed = 1;
+            mean[0] = x;
+            mean[1] = y;
+            memcpy(means[i], mean, sizeof(mean));
         }
     }
     return changed;
