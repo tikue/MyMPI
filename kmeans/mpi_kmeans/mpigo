@@ -1,2 +1,4 @@
 #!/bin/bash
-mpirun -np 8 -hostfile hosts ./mpi_kmeans
+N=$1
+shift
+mpirun -np $N -hostfile hosts ./mpi_kmeans "$@"

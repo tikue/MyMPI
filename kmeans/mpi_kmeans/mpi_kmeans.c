@@ -47,7 +47,7 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
-        if (!rank) printmeans(k, means, 0);
+        //if (!rank) printmeans(k, means, 0);
     } while (changed);
     if (!rank) printmeans(k, means, 1);
 
@@ -90,7 +90,7 @@ int update_means(int k, point *means, point *partials, int *counts, int rank) {
     point newmeans[k];
 
     MPI_Allreduce(counts, clusters, k, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Reduce(partials, newmeans, 2*k, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(partials, newmeans, 2 * k, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     for (int i = 0; i < k; i++) {
         int cluster = clusters[i];
@@ -106,8 +106,6 @@ int update_means(int k, point *means, point *partials, int *counts, int rank) {
 
             if (x != mean[0] || y != mean[1]) {
                 changed = 1;
-                printf("updating mean: (%f, %f)-->(%f, %f)\n",
-                        mean[0], mean[1], x, y);
                 mean[0] = x;
                 mean[1] = y;
                 memcpy(means[i], mean, sizeof(mean));
@@ -187,7 +185,7 @@ void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     
 // number of floats to send per proc; i.e. 2*(points to send)
 void getsendcnts(int *sendcnts, int numlines, int numprocs) {
-    int sendcnt = 2 * numlines / numprocs;
+    int sendcnt = 2 * floor(numlines / numprocs);
     int leftovers = numlines % numprocs;
     for (int i = 0; i < leftovers; i++)
         sendcnts[i] = sendcnt + 2;

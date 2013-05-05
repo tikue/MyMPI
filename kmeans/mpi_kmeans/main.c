@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <assert.h>
+#include <time.h>
 #include <mpi.h>
 #include "mpi_kmeans.h"
 
@@ -53,7 +54,11 @@ int main(int argc, char *argv[]) {
         .filename = filename
     };
 
+    time_t start = clock();
     kmeans(rank, numprocs, k, info);
+    time_t end = clock();
+    if (!rank)
+        printf("wall time: %f\n", (end - start) * 1.0 / CLOCKS_PER_SEC);
     MPI_Finalize();
     exit(0);
 }
