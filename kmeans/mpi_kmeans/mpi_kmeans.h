@@ -18,6 +18,7 @@ int in(int n, int *a, int t);
 int kmeans(int rank, int numprocs, int k, fileinfo info);
 int update_means(int k, point *means, point *partials, int *counts, int rank);
 int asgncluster(int k, point *means, point p);
+void addpt(point sum, point p);
 void initmeans(int k, point *means, int total, point *all);
 void sendmeans(int k, point *means, int rank);
 void printmeans(int k, point *means, int nonumbers);

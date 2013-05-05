@@ -37,13 +37,8 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
         // determine assignments and sum partial means
         for (int i = 0; i < recvcnt; i++) {
-            point p, closest;
-            memcpy(p, points[i], sizeof(p));
-            int m = asgncluster(k, means, p);
-            memcpy(closest, partialmeans[m], sizeof(closest));
-            closest[0] += p[0];
-            closest[1] += p[1];
-            memcpy(partialmeans[m], closest, sizeof(closest));
+            int m = asgncluster(k, means, points[i]);
+            addpt(partialmeans[m], points[i]);
             counts[m]++;
         }
         
@@ -56,6 +51,11 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
     } while (changed);
     if (!rank) printmeans(k, means, 1);
 
+}
+
+void addpt(point sum, point p) {
+    sum[0] += p[0];
+    sum[1] += p[1];
 }
 
 void printmeans(int k, point *means, int nonumbers) {
