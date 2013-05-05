@@ -44,12 +44,12 @@ int main(int argc, char *argv[]) {
         case 'f':
             filename = optarg;
             break;
-	case 'p':
-	    choice = 0;
-	    break;
-	case 'd':
-	    choice = 1;
-	    break;
+        case 'p':
+            choice = 0;
+            break;
+        case 'd':
+            choice = 1;
+            break;
         case 'h':
         default:
             usage(argv[0]);
