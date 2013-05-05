@@ -18,7 +18,6 @@ void senddnameans(int k, char *means, int rank);
 void initdnameans(int k, char* means, int total, char *all);
 
 int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
-
     // read in dna strands and initialize means
     dnalen = info.linelen + 1; // \0 teminated
     char alldna[info.numlines * dnalen];
