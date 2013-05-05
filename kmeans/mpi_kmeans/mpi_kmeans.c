@@ -30,28 +30,15 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
     int changed;
     do {
         changed = 0;
-        point rootkmeans[k][info.numlines];
         point kmeans[k][recvcnt];
         int counts[k];
-        memset(rootkmeans, 0, sizeof(rootkmeans));
         memset(kmeans, 0, sizeof(kmeans));
         memset(counts, 0, sizeof(counts));
 
-        // calculate recvcnt distances
+        // assign points to clusters
         for (int i = 0; i < recvcnt; i++) {
-            point p;
-            memcpy(p, points[i], sizeof(p));
-            int closest = 0;
-            float dist = eucliddist(means[0], p);
-            float jdist;
-            for (int j = 1; j < k; j++) {
-                jdist = eucliddist(means[j], p);
-                if (jdist < dist) {
-                    closest = j;
-                    dist = jdist;
-                }
-            }
-            memcpy(kmeans[closest][counts[closest]++], p, sizeof(p));
+            int m = asgncluster(k, means, points[i]);
+            memcpy(kmeans[m][counts[m]++], points[i], sizeof(points[i]));
         }
         
         // reduce clusters to centroids
@@ -62,14 +49,30 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
         }
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
-        if (!rank) {
-            for (int i = 0; i < k; i++)
-                printf("%d:(%f, %f)\n", i, means[i][0], means[i][1]);
-            printf("\n");
-        }
+        if (!rank) printmeans(k, means);
     } while (changed);
-    if (!rank)
-        printf("done.\n");
+
+}
+
+void printmeans(int k, point *means) {
+    printf("updated means:\n");
+    for (int i = 0; i < k; i++)
+        printf("%d:(%f, %f)\n", i, means[i][0], means[i][1]);
+    printf("\n");
+}
+
+int asgncluster(int k, point *means, point p) {
+    int closest = 0;
+    float dist = eucliddist(means[0], p);
+    float disti;
+    for (int i = 1; i < k; i++) {
+        disti = eucliddist(means[i], p);
+        if (disti < dist) {
+            closest = i;
+            dist = disti;
+        }
+    }
+    return closest;
 }
 
 // given a cluster of points on each proc, reduce to the mean
@@ -77,8 +80,10 @@ int update_mean(point mean, point *partial, int partial_cnt, int rank) {
     int changed = 0;
     // get cluster size
     int cluster;
-    MPI_Reduce(&partial_cnt, &cluster, 1, MPI_INT, MPI_SUM, 0,
+    MPI_Allreduce(&partial_cnt, &cluster, 1, MPI_INT, MPI_SUM,
             MPI_COMM_WORLD);
+    if (!cluster)
+        return changed;
 
     point meani[partial_cnt];
     memcpy(meani, partial, sizeof(meani));
