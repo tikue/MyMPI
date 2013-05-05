@@ -8,6 +8,7 @@
 #include <mpi.h>
 #include "mpi_kmeans.h"
 
+// mean function that initializes data and performs kmeans
 int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
     // read in data points and initialize means
@@ -71,6 +72,7 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
         printf("done.\n");
 }
 
+// given a cluster of points on each proc, reduce to the mean
 int update_mean(point mean, point *partial, int partial_cnt, int rank) {
     int changed = 0;
     // get cluster size
@@ -105,6 +107,7 @@ int update_mean(point mean, point *partial, int partial_cnt, int rank) {
     return changed;
 }
 
+// initialize random means by choosing points from data
 void initmeans(int k, point *means, int total, point *all) {
     srand(time(NULL));
     int meanis[k];
@@ -126,6 +129,7 @@ void initmeans(int k, point *means, int total, point *all) {
     printf("\n");
 }
 
+// check if int n is in array a of size t
 int in(int n, int *a, int t) {
     for (int i = 0; i < n; i++)
         if (a[i] == t)
@@ -133,10 +137,12 @@ int in(int n, int *a, int t) {
     return 0;
 }
 
+// update 
 void sendmeans(int k, point *means, int rank) {
     MPI_Bcast(means, 2 * k, MPI_FLOAT, 0, MPI_COMM_WORLD);
 }
 
+// read in data from a file
 int initpoints(point *points, fileinfo info) {
     FILE *fp;
     if (!(fp = fopen(info.filename, "r")))
@@ -160,6 +166,7 @@ int initpoints(point *points, fileinfo info) {
     return 0;
 }
 
+// each proc gets a fraction of the total data points
 void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     int sendcnts[np], displs[np];
     getsendcnts(sendcnts, sum, np);
@@ -178,12 +185,14 @@ void getsendcnts(int *sendcnts, int numlines, int numprocs) {
         sendcnts[i] = sendcnt;
 }
 
+// displacements used in scatterv
 void getdispls(int *displs, int *sendcnts, int numprocs) {
     displs[0] = 0;
     for (int i = 1; i < numprocs; i++)
         displs[i] = displs[i-1] + sendcnts[i-1];
 }
 
+// euclidean distance between two points
 float eucliddist(point a, point b) {
     return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2));
 }
