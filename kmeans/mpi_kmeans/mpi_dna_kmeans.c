@@ -43,7 +43,7 @@ int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
     int changed;
     do {
         changed = 0;
-        char* kmeans[k][recvcnt];
+        char *kmeans[k][recvcnt];
         int counts[k];
         memset(kmeans, 0, sizeof(kmeans));
         memset(counts, 0, sizeof(counts));
@@ -69,56 +69,58 @@ int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
 	    memset(newmean, 0, sizeof(newmean));
 	    // for each position
 	    for (int t = 0; t < dnalen - 1; t++) {
-		int freq[4];
-		memset(freq, 0, sizeof(freq));
-		for (int j = 0; j < counts[i]; j++) {
-		    switch(kmeans[i][j][t]) {
-			case 'A':
-			    freq[0]++;
-			    break;
-			case 'C':
-			    freq[1]++;
-			    break;
-			case 'G':
-			    freq[2]++;
-			    break;
-			case 'T':
-			    freq[3]++;
-			    break;
-			default:
-			    assert(0);
-		    }
-		}
+            int freq[4];
+            memset(freq, 0, sizeof(freq));
+            for (int j = 0; j < counts[i]; j++) {
+                switch(kmeans[i][j][t]) {
+                case 'A':
+                    freq[0]++;
+                    break;
+                case 'C':
+                    freq[1]++;
+                    break;
+                case 'G':
+                    freq[2]++;
+                    break;
+                case 'T':
+                    freq[3]++;
+                    break;
+                default:
+                    assert(0);
+                }
+            }
 
-		int countA, countC, countG, countT;
-		MPI_Reduce(freq, &countA, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-		MPI_Reduce(&freq[1], &countC, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-		MPI_Reduce(&freq[2], &countG, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-		MPI_Reduce(&freq[3], &countT, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            int countA, countC, countG, countT;
+            MPI_Reduce(freq, &countA, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&freq[1], &countC, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&freq[2], &countG, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&freq[3], &countT, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-		if (!rank) {
-	 	    newmean[t] = 'A';
-		    int cnt = countA;
-		    if (countC > cnt) {
-		        newmean[t] = 'C';
-			cnt = countC;
-		    }
-		    if (countG > cnt) {
-		        newmean[t] = 'G';
-			cnt = countG;
-		    }
-	 	    if (countT > cnt) {
-		        newmean[t] = 'T';
-		        cnt = countT;
-		    }
-		}
+            if (!rank) {
+                newmean[t] = 'A';
+                int cnt = countA;
+                if (countC > cnt) {
+                    newmean[t] = 'C';
+                cnt = countC;
+                }
+                if (countG > cnt) {
+                    newmean[t] = 'G';
+                cnt = countG;
+                }
+                if (countT > cnt) {
+                    newmean[t] = 'T';
+                    cnt = countT;
+                }
+            }
 	    }
 
             if (!rank) {
 	        if (strncmp(means+i*dnalen, newmean, dnalen-1)) {
                     changed = 1;
+/*
                     printf("updating mean[%d]: %s-->%s\n",
                         i, means+i*dnalen, newmean);
+*/
 		    memcpy(means+i*dnalen, newmean, dnalen-1);
                 }
 
@@ -127,9 +129,11 @@ int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         senddnameans(k, means, rank);
         if (!rank) {
+/*
             for (int i = 0; i < k; i++)
                 printf("%d: %s\n", i, means+i*dnalen);
             printf("\n");
+*/
         }
     } while (changed);
     if (!rank)
@@ -152,14 +156,16 @@ void initdnameans(int k, char* means, int total, char *all) {
             
         meanis[i] = index;
 	memcpy(means+i*dnalen, all+index*dnalen, (dnalen)*sizeof(char));
-	printf("%s\n", means+i*dnalen);
+//	printf("%s\n", means+i*dnalen);
 	
     }
+/*
     printf("initmeans:\n");
     for (int i = 0; i < k; i++) {
         printf("%s\n", means+i*dnalen);
     }
     printf("\n");
+*/
 }
 
 void senddnameans(int k, char *means, int rank) {
