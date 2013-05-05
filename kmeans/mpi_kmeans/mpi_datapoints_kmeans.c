@@ -175,6 +175,8 @@ int initpoints(point *points, fileinfo info) {
 void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     int sendcnts[np], displs[np];
     getsendcnts(sendcnts, sum, np);
+    for (int i = 0; i < np; i++)
+        sendcnts[i] *= 2;
     getdispls(displs, sendcnts, np);
     MPI_Scatterv(all, sendcnts, displs, MPI_FLOAT, pts, 2*cnt, MPI_FLOAT,
             0, MPI_COMM_WORLD);
@@ -182,10 +184,10 @@ void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     
 // number of floats to send per proc; i.e. 2*(points to send)
 void getsendcnts(int *sendcnts, int numlines, int numprocs) {
-    int sendcnt = 2 * floor(numlines / numprocs);
+    int sendcnt = floor(numlines / numprocs);
     int leftovers = numlines % numprocs;
     for (int i = 0; i < leftovers; i++)
-        sendcnts[i] = sendcnt + 2;
+        sendcnts[i] = sendcnt + 1;
     for (int i = leftovers; i < numprocs; i++)
         sendcnts[i] = sendcnt;
 }
