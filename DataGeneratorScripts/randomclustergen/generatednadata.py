@@ -91,7 +91,7 @@ for i in range(0, numClusters):
 # step 2: generate the points for each centroid
 points = []
 minClusterVar = 0
-maxClusterVar = numBases // numClusters
+maxClusterVar = numBases // 20 if numBases >= 20 else 2
 with open(output, 'w') as f:
     for i in range(0, numClusters):
         # compute the variance for this cluster
