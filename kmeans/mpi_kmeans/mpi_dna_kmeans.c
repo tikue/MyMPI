@@ -20,8 +20,8 @@ void initdnameans(int k, char* means, int total, char *all);
 int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
     // read in dna strands and initialize means
     dnalen = info.linelen + 1; // \0 teminated
-    char alldna[info.numlines * dnalen];
-    char means[k * dnalen];
+    char* alldna = malloc(sizeof(char) * info.numlines * dnalen);
+    char* means = malloc(sizeof(char) * k * dnalen);
 
     memset(alldna, 0, sizeof(alldna));
     memset(means, 0, sizeof(means));
@@ -31,12 +31,12 @@ int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
         initdnameans(k, means, info.numlines, alldna);
     }
     senddnameans(k, means, rank);
+    
 
     // scatter the data
     int remainder = info.numlines % numprocs;
     int recvcnt = info.numlines / numprocs + (rank < remainder ? 1:0);
-    int element = recvcnt * dnalen;
-    char dnas[recvcnt*dnalen];
+    char* dnas = malloc(sizeof(char) * recvcnt*dnalen);
     scatterdnadata(alldna, info.numlines, dnas, recvcnt, numprocs, rank);
 
     // iterate
@@ -134,6 +134,9 @@ int dna_kmeans(int rank, int numprocs, int k, fileinfo info) {
     } while (changed);
     if (!rank)
         printf("done.\n");
+    free(alldna);
+    free(means);
+    free(dnas);
 }
 
 void initdnameans(int k, char* means, int total, char *all) {
@@ -152,14 +155,7 @@ void initdnameans(int k, char* means, int total, char *all) {
             
         meanis[i] = index;
 	memcpy(means+i*dnalen, all+index*dnalen, (dnalen)*sizeof(char));
-	printf("%s\n", means+i*dnalen);
-	
     }
-    printf("initmeans:\n");
-    for (int i = 0; i < k; i++) {
-        printf("%s\n", means+i*dnalen);
-    }
-    printf("\n");
 }
 
 void senddnameans(int k, char *means, int rank) {

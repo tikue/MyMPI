@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
-            if (!rank) printf("k=%d\n", k);
             break;
         case 'l':
             linelen = atoi(optarg);

@@ -6,7 +6,7 @@ import math
 import random
 
 def usage():
-    print '$> python generaterawdata.py <required args> [optional args]\n' + \
+    print '$> python generatednadata.py <required args> [optional args]\n' + \
         '\t-c <#>\t\tNumber of clusters to generate\n' + \
         '\t-p <#>\t\tNumber of points per cluster\n' + \
         '\t-o <file>\tFilename for the output of the raw data\n' + \
