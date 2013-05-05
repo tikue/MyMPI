@@ -28,6 +28,7 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
     // iterate
     int changed;
+    int iters = 0;
     do {
         changed = 0;
         point partialmeans[k];
@@ -48,8 +49,9 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
         //if (!rank) printmeans(k, means, 0);
-    } while (changed);
-    if (!rank) printmeans(k, means, 1);
+    } while (changed && ++iters < 100);
+    //if (!rank) printmeans(k, means, 1);
+    if (!rank) printf("iters: %d, ", iters);
 
 }
 
@@ -130,11 +132,6 @@ void initmeans(int k, point *means, int total, point *all) {
         meanis[i] = index;
         memcpy(means[i], all[index], sizeof(means[i]));
     }
-    printf("initmeans:\n");
-    for (int i = 0; i < k; i++) {
-        printf("(%f, %f)\n", means[i][0], means[i][1]);
-    }
-    printf("\n");
 }
 
 // check if int n is in array a of size t

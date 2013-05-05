@@ -54,11 +54,21 @@ int main(int argc, char *argv[]) {
         .filename = filename
     };
 
-    time_t start = clock();
-    kmeans(rank, numprocs, k, info);
-    time_t end = clock();
+    int runs = 60;
+    float mean_time = 0;
+    float clocks_per_sec = 1.0 * CLOCKS_PER_SEC;
+    for (int i = 0; i < runs; i++) {
+        time_t start = clock();
+        kmeans(rank, numprocs, k, info);
+        time_t end = clock();
+        float runtime = (end - start) / clocks_per_sec;
+        mean_time += runtime;
+        if (!rank)
+            printf("wall time: %f\n", runtime);
+    }
+    mean_time /= runs;
     if (!rank)
-        printf("wall time: %f\n", (end - start) * 1.0 / CLOCKS_PER_SEC);
+        printf("average wall time: %f\n", mean_time);
     MPI_Finalize();
     exit(0);
 }
