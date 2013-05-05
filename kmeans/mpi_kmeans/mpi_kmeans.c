@@ -119,7 +119,7 @@ int update_means(int k, point *means, point *partials, int *counts, int rank) {
 
 // initialize random means by choosing points from data
 void initmeans(int k, point *means, int total, point *all) {
-    srand(time(NULL));
+    srand(0); // arbitrary but non-random seed for data analysis
     int meanis[k];
     memset(meanis, -1, k);
 

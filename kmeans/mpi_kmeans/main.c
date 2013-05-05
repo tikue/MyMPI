@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
         .filename = filename
     };
 
-    int runs = 60;
+    int runs = 5;
     float mean_time = 0;
     float clocks_per_sec = 1.0 * CLOCKS_PER_SEC;
     for (int i = 0; i < runs; i++) {
