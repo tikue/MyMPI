@@ -184,7 +184,7 @@ void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     
 // number of floats to send per proc; i.e. 2*(points to send)
 void getsendcnts(int *sendcnts, int numlines, int numprocs) {
-    int sendcnt = floor(numlines / numprocs);
+    int sendcnt = numlines / numprocs;
     int leftovers = numlines % numprocs;
     for (int i = 0; i < leftovers; i++)
         sendcnts[i] = sendcnt + 1;
