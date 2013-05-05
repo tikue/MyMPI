@@ -48,9 +48,9 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
-        //if (!rank) printmeans(k, means, 0);
+        if (!rank) printmeans(k, means, 0);
     } while (changed && ++iters < 100);
-    //if (!rank) printmeans(k, means, 1);
+    if (!rank) printmeans(k, means, 1);
     if (!rank) printf("iters: %d, ", iters);
 
 }
