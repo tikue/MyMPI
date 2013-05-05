@@ -99,12 +99,10 @@ int update_means(int k, point *means, point *partials, int *counts, int rank) {
 
         if (!rank) {
             point mean;
-            point m;
             memcpy(mean, means[i], sizeof(mean));
-            memcpy(m, newmeans[i], sizeof(point));
 
-            float x = m[0] / cluster;
-            float y = m[1] / cluster;
+            float x = newmeans[i][0] / cluster;
+            float y = newmeans[i][1] / cluster;
 
             if (x != mean[0] || y != mean[1]) {
                 changed = 1;
