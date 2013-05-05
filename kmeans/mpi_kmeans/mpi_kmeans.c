@@ -30,34 +30,41 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
     int changed;
     do {
         changed = 0;
-        point kmeans[k][recvcnt];
+        point partialmeans[k];
         int counts[k];
-        memset(kmeans, 0, sizeof(kmeans));
+        memset(partialmeans, 0, sizeof(partialmeans));
         memset(counts, 0, sizeof(counts));
 
-        // assign points to clusters
+        // determine assignments and sum partial means
         for (int i = 0; i < recvcnt; i++) {
-            int m = asgncluster(k, means, points[i]);
-            memcpy(kmeans[m][counts[m]++], points[i], sizeof(points[i]));
+            point p, closest;
+            memcpy(p, points[i], sizeof(p));
+            int m = asgncluster(k, means, p);
+            memcpy(closest, partialmeans[m], sizeof(closest));
+            closest[0] += p[0];
+            closest[1] += p[1];
+            memcpy(partialmeans[m], closest, sizeof(closest));
+            counts[m]++;
         }
         
         // reduce clusters to centroids
-        for (int i = 0; i < k; i++) {
-            // calculate mean
-            if (update_mean(means[i], kmeans[i], counts[i], rank))
-                changed = 1;
-        }
+        changed = update_means(k, means, partialmeans, counts, rank);
+
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
-        if (!rank) printmeans(k, means);
+        if (!rank) printmeans(k, means, 0);
     } while (changed);
+    if (!rank) printmeans(k, means, 1);
 
 }
 
-void printmeans(int k, point *means) {
+void printmeans(int k, point *means, int nonumbers) {
     printf("updated means:\n");
-    for (int i = 0; i < k; i++)
-        printf("%d:(%f, %f)\n", i, means[i][0], means[i][1]);
+    for (int i = 0; i < k; i++) {
+        if (!nonumbers)
+            printf("%d: ", i);
+        printf("(%f, %f)\n", means[i][0], means[i][1]);
+    }
     printf("\n");
 }
 
@@ -76,37 +83,37 @@ int asgncluster(int k, point *means, point p) {
 }
 
 // given a cluster of points on each proc, reduce to the mean
-int update_mean(point mean, point *partial, int partial_cnt, int rank) {
+int update_means(int k, point *means, point *partials, int *counts, int rank) {
     int changed = 0;
     // get cluster size
-    int cluster;
-    MPI_Allreduce(&partial_cnt, &cluster, 1, MPI_INT, MPI_SUM,
-            MPI_COMM_WORLD);
-    if (!cluster)
-        return changed;
+    int clusters[k];
+    point newmeans[k];
 
-    point meani[partial_cnt];
-    memcpy(meani, partial, sizeof(meani));
+    MPI_Allreduce(counts, clusters, k, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Reduce(partials, newmeans, 2*k, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    point p = {0, 0};
-    for (int j = 0; j < partial_cnt; j++) {
-        point pt;
-        memcpy(pt, meani[j], sizeof(pt));
-        p[0] += pt[0];
-        p[1] += pt[1];
-    }
-    point sum_p;
-    MPI_Reduce(p, sum_p, 2, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    for (int i = 0; i < k; i++) {
+        int cluster = clusters[i];
+        if (!cluster)
+            continue;
 
-    if (!rank) {
-        float x = sum_p[0] / cluster;
-        float y = sum_p[1] / cluster;
-        if (x != mean[0] || y != mean[1]) {
-            changed = 1;
-            printf("updating mean: (%f, %f)-->(%f, %f)\n",
-                    mean[0], mean[1], x, y);
-            mean[0] = x;
-            mean[1] = y;
+        if (!rank) {
+            point mean;
+            point m;
+            memcpy(mean, means[i], sizeof(mean));
+            memcpy(m, newmeans[i], sizeof(point));
+
+            float x = m[0] / cluster;
+            float y = m[1] / cluster;
+
+            if (x != mean[0] || y != mean[1]) {
+                changed = 1;
+                printf("updating mean: (%f, %f)-->(%f, %f)\n",
+                        mean[0], mean[1], x, y);
+                mean[0] = x;
+                mean[1] = y;
+                memcpy(means[i], mean, sizeof(mean));
+            }
         }
     }
     return changed;

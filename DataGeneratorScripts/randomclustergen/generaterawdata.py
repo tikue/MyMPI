@@ -65,32 +65,28 @@ def handleArgs(args):
             output is None:
         usage()
         sys.exit()
-    return (numClusters, numPoints, output, \
-            maxValue)
+    return (numClusters, numPoints, output, maxValue)
 
 def drawOrigin(maxValue):
     return numpy.random.uniform(0, maxValue, 2)
 
 # start by reading the command line
-numClusters, \
-numPoints, \
-output, \
-maxValue = handleArgs(sys.argv)
+numClusters, numPoints, output, maxValue = handleArgs(sys.argv)
 
 # step 1: generate each 2D centroid
 centroids_radii = []
-minDistance = 0
+minDistance = maxValue / float(numClusters) / 2.0
 for i in range(0, numClusters):
     centroid_radius = drawOrigin(maxValue)
     # is it far enough from the others?
-    while (tooClose(centroid_radius, centroids_radii, minDistance)):
+    while tooClose(centroid_radius, centroids_radii, minDistance):
         centroid_radius = drawOrigin(maxValue)
     centroids_radii.append(centroid_radius)
 
 # step 2: generate the points for each centroid
 points = []
 minClusterVar = 0
-maxClusterVar = 0.5
+maxClusterVar = maxValue / float(numClusters) / 2.0
 with open(output, 'w') as f:
     for i in range(0, numClusters):
         # compute the variance for this cluster

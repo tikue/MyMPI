@@ -16,11 +16,11 @@ typedef struct fileinfo_s {
 
 int in(int n, int *a, int t);
 int kmeans(int rank, int numprocs, int k, fileinfo info);
-int update_mean(point mean, point *partial, int partial_cnt, int rank);
+int update_means(int k, point *means, point *partials, int *counts, int rank);
 int asgncluster(int k, point *means, point p);
 void initmeans(int k, point *means, int total, point *all);
 void sendmeans(int k, point *means, int rank);
-void printmeans(int k, point *means);
+void printmeans(int k, point *means, int nonumbers);
 int initpoints(point *points, fileinfo info);
 void getsendcnts(int *sendcnts, int numlines, int numprocs);
 void getdispls(int *displs, int *sendcnts, int numprocs);
