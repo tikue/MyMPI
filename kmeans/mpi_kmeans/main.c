@@ -36,8 +36,10 @@ int main(int argc, char *argv[]) {
             break;
         case 'l':
             linelen = atoi(optarg);
+	    break;
         case 'n':
             numlines = atoi(optarg);
+	    break;
         case 'f':
             filename = optarg;
             break;
