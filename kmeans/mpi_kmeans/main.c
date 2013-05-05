@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     // getopt vars
     char opt;
     int k = 20, linelen = 32, numlines = 400;
-    char *filename = "input/datapoints.txt";
+    char *filename = "input/points.txt";
 
     while ((opt = getopt(argc, argv, "k:l:n:f:h")) != EOF) {
         switch(opt) {

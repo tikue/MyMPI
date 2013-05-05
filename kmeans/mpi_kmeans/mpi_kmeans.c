@@ -38,7 +38,8 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
 
         // calculate recvcnt distances
         for (int i = 0; i < recvcnt; i++) {
-            point p = points[i];
+            point p;
+            memcpy(p, points[i], sizeof(p));
             int closest = 0;
             float dist = eucliddist(means[0], p);
             float jdist;
@@ -49,54 +50,59 @@ int kmeans(int rank, int numprocs, int k, fileinfo info) {
                     dist = jdist;
                 }
             }
-            kmeans[closest][counts[closest]++] = p;
+            memcpy(kmeans[closest][counts[closest]++], p, sizeof(p));
         }
         
         // reduce clusters to centroids
         for (int i = 0; i < k; i++) {
-            point *meani = kmeans[i];
-            int count = counts[i];
-            int cluster;
-            MPI_Allreduce(&count, &cluster, 1, MPI_INT, MPI_SUM,
-                    MPI_COMM_WORLD);
-
-            float x = 0, y = 0;
-            for (int j = 0; j < count; j++) {
-                point pt = meani[j];
-                x += pt.x;
-                y += pt.y;
-            }
-            float sum_x;
-            MPI_Reduce(&x, &sum_x, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-
-            float sum_y;
-            MPI_Reduce(&y, &sum_y, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-            
-            if (!rank) {
-                float x = sum_x / cluster;
-                float y = sum_y / cluster;
-                point mean = means[i];
-                if (x != mean.x || y != mean.y) {
-                    changed = 1;
-                    printf("updating mean[%d]: (%f, %f)-->(%f, %f)\n",
-                        i, mean.x, mean.y, x, y);
-                    means[i] = (point) {
-                        .x = x,
-                        .y = y
-                    };
-                }
-            }
+            // calculate mean
+            if (update_mean(means[i], kmeans[i], counts[i], rank))
+                changed = 1;
         }
         MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         sendmeans(k, means, rank);
         if (!rank) {
             for (int i = 0; i < k; i++)
-                printf("%d:(%f, %f)\n", i, means[i].x, means[i].y);
+                printf("%d:(%f, %f)\n", i, means[i][0], means[i][1]);
             printf("\n");
         }
     } while (changed);
     if (!rank)
         printf("done.\n");
+}
+
+int update_mean(point mean, point *partial, int partial_cnt, int rank) {
+    int changed = 0;
+    // get cluster size
+    int cluster;
+    MPI_Reduce(&partial_cnt, &cluster, 1, MPI_INT, MPI_SUM, 0,
+            MPI_COMM_WORLD);
+
+    point meani[partial_cnt];
+    memcpy(meani, partial, sizeof(meani));
+
+    point p = {0, 0};
+    for (int j = 0; j < partial_cnt; j++) {
+        point pt;
+        memcpy(pt, meani[j], sizeof(pt));
+        p[0] += pt[0];
+        p[1] += pt[1];
+    }
+    point sum_p;
+    MPI_Reduce(p, sum_p, 2, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (!rank) {
+        float x = sum_p[0] / cluster;
+        float y = sum_p[1] / cluster;
+        if (x != mean[0] || y != mean[1]) {
+            changed = 1;
+            printf("updating mean: (%f, %f)-->(%f, %f)\n",
+                    mean[0], mean[1], x, y);
+            mean[0] = x;
+            mean[1] = y;
+        }
+    }
+    return changed;
 }
 
 void initmeans(int k, point *means, int total, point *all) {
@@ -110,17 +116,12 @@ void initmeans(int k, point *means, int total, point *all) {
             while (in(k, meanis, index))
                 index = rand() % total;
             
-        point p = all[index];
         meanis[i] = index;
-        means[i] = (point) {
-            .x = p.x,
-            .y = p.y
-        };
+        memcpy(means[i], all[index], sizeof(means[i]));
     }
     printf("initmeans:\n");
     for (int i = 0; i < k; i++) {
-        point mean = means[i];
-        printf("(%f, %f)\n", mean.x, mean.y);
+        printf("(%f, %f)\n", means[i][0], means[i][1]);
     }
     printf("\n");
 }
@@ -133,22 +134,7 @@ int in(int n, int *a, int t) {
 }
 
 void sendmeans(int k, point *means, int rank) {
-    float xs[k], ys[k];
-    point mean;
-    if (!rank)
-        for (int i = 0; i < k; i++) {
-            mean = means[i];
-            xs[i] = mean.x;
-            ys[i] = mean.y;
-        }
-    MPI_Bcast(xs, k, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(ys, k, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    if (rank)
-        for (int i = 0; i < k; i++)
-            means[i] = (point) {
-                .x = xs[i],
-                .y = ys[i]
-            };
+    MPI_Bcast(means, 2 * k, MPI_FLOAT, 0, MPI_COMM_WORLD);
 }
 
 int initpoints(point *points, fileinfo info) {
@@ -162,12 +148,11 @@ int initpoints(point *points, fileinfo info) {
     int numpoints = 0;
     for (int lineno = 0; lineno < info.numlines; lineno++) {
         read = getline(&line, &len, fp);
-        float x = atof(line);
-        float y = atof(strchr(line, ',') + 1);
-        points[numpoints++] = (point) {
-            .x = x,
-            .y = y
+        point p = {
+            atof(line),
+            atof(strchr(line, ',') + 1)
         };
+        memcpy(points[numpoints++], p, sizeof(p));
     }
     if (line)
         free(line);
@@ -179,34 +164,16 @@ void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank) {
     int sendcnts[np], displs[np];
     getsendcnts(sendcnts, sum, np);
     getdispls(displs, sendcnts, np);
-    float allxs[sum], allys[sum];
-    if (!rank) {
-        point p;
-        for (int i = 0; i < sum; i++) {
-            p = all[i];
-            allxs[i] = p.x;
-            allys[i] = p.y;
-        }
-    }
-    float xs[cnt], ys[cnt];
-    MPI_Scatterv(allxs, sendcnts, displs, MPI_FLOAT, xs, cnt,
-                MPI_FLOAT, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(allys, sendcnts, displs, MPI_FLOAT, ys, cnt,
-                MPI_FLOAT, 0, MPI_COMM_WORLD);
-    
-    // construct the point arrays
-    for (int i = 0; i < cnt; i++)
-        pts[i] = (point) {
-            .x = xs[i],
-            .y = ys[i]
-        };
+    MPI_Scatterv(all, sendcnts, displs, MPI_FLOAT, pts, 2*cnt, MPI_FLOAT,
+            0, MPI_COMM_WORLD);
 }
     
+// number of floats to send per proc; i.e. 2*(points to send)
 void getsendcnts(int *sendcnts, int numlines, int numprocs) {
-    int sendcnt = numlines / numprocs;
+    int sendcnt = 2 * numlines / numprocs;
     int leftovers = numlines % numprocs;
     for (int i = 0; i < leftovers; i++)
-        sendcnts[i] = sendcnt + 1;
+        sendcnts[i] = sendcnt + 2;
     for (int i = leftovers; i < numprocs; i++)
         sendcnts[i] = sendcnt;
 }
@@ -218,5 +185,5 @@ void getdispls(int *displs, int *sendcnts, int numprocs) {
 }
 
 float eucliddist(point a, point b) {
-    return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+    return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2));
 }
