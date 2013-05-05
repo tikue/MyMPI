@@ -37,13 +37,26 @@ int main(int argc, char *argv[]) {
 	file_name = argv[2];
 
 
-	if (choice == 0) {
-		SeqKmeans <Point> kmeans(file_name, atoi(argv[3]), atof(argv[4]));
-		kmeans.kmeans();
-		kmeans.save();
-	} else {
-		SeqKmeans<DNAStrand> kmeans(file_name, atoi(argv[3]), atof(argv[4]));
-		kmeans.kmeans();
-		kmeans.save();
-	}
+    int runs = 5;
+    float mean_time = 0;
+    float clocks_per_sec = 1.0 * CLOCKS_PER_SEC;
+    for (int i = 0; i < runs; i++) {
+        time_t start = clock();
+        if (choice == 0) {
+            SeqKmeans <Point> kmeans(file_name, atoi(argv[3]), atof(argv[4]));
+            kmeans.kmeans();
+            //kmeans.save();
+        } else {
+            SeqKmeans<DNAStrand> kmeans(file_name, atoi(argv[3]), atof(argv[4]));
+            kmeans.kmeans();
+            //kmeans.save();
+        }
+        time_t end = clock();
+        float runtime = (end - start) / clocks_per_sec;
+        mean_time += runtime;
+        printf("wall time: %f\n", runtime);
+    }
+    mean_time /= runs;
+    printf("average wall time: %f\n", mean_time);
+
 }

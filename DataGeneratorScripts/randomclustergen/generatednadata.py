@@ -91,7 +91,7 @@ for i in range(0, numClusters):
 # step 2: generate the points for each centroid
 points = []
 minClusterVar = 0
-maxClusterVar = 10
+maxClusterVar = numBases // numClusters
 with open(output, 'w') as f:
     for i in range(0, numClusters):
         # compute the variance for this cluster
@@ -101,7 +101,7 @@ with open(output, 'w') as f:
             # generate a 2D point with specified variance
             # point is normally-distributed around centroids[i]
             s = list(cluster)
-            for _ in range(variance):
+            for _ in range(random.choice(range(1 + variance))):
                 i = random.randint(0, numBases-1)
                 s[i] = random.choice(list({'A', 'C', 'G', 'T'} - set(s[i])))
             # write the points out

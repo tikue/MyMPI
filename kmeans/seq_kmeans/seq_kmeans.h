@@ -56,13 +56,13 @@ template <class DataType> void SeqKmeans<DataType>::readData(string file_name) {
 template <class DataType> void SeqKmeans<DataType>::initialize() {
     /* pick every N/K th data objects */
     int i;
-    cout << "Initial data: " << endl;
+    //cout << "Initial data: " << endl;
     for (i = 0; i < K; i++) {
         centroids[i] = data[i * N/K];
-	centroids[i].printSelf();
-	cout << endl;
+	//centroids[i].printSelf();
+	//cout << endl;
     }
-    cout << endl;
+    //cout << endl;
 }
 
 template <class DataType> void SeqKmeans<DataType>::kmeans() {
@@ -75,7 +75,7 @@ template <class DataType> void SeqKmeans<DataType>::kmeans() {
     initialize();
 
     do {
-	cout << "epoc: " << epoc << endl;
+	//cout << "epoc: " << epoc << endl;
 	epoc++;
 	delta = 0;
 
@@ -107,36 +107,36 @@ template <class DataType> void SeqKmeans<DataType>::kmeans() {
         }
 
         for (j = 0; j < K; j++) {
-	    cout << "cluster " << j << ": " << endl;
+	    //cout << "cluster " << j << ": " << endl;
 	    for (i = 0; i < clusters[j].size(); i++) {
-		cout << i << " :";
-		clusters[j][i].printSelf();
-		cout << endl;
+		//cout << i << " :";
+		//clusters[j][i].printSelf();
+		//cout << endl;
 	    }
             centroids[j] = DataType::getMean(clusters[j]);
-	    cout << "centroid: ";
-	    centroids[j].printSelf();
-	    cout << endl;
+	    //cout << "centroid: ";
+	    //centroids[j].printSelf();
+	    //cout << endl;
         }
-	cout << endl;
+	//cout << endl;
     } while (delta > tolerance);;
 }
 
 
 template <class DataType> void SeqKmeans<DataType>::save() {
     int i;
-    cout << "K centroids:" << endl;
+    //cout << "K centroids:" << endl;
     for (i = 0; i < K; i++) {
-        cout << "i: ";
-	centroids[i].printSelf();
-	cout << endl;
+        //cout << "i: ";
+	//centroids[i].printSelf();
+	//cout << endl;
     }
-    cout << endl;
-    cout << "Cluster assignment:" << endl;
+    //cout << endl;
+    //cout << "Cluster assignment:" << endl;
     for (i = 0; i < N; i++) {
-        cout << "i: ";
- 	data[i].printSelf();
-	cout << "   - cluster " << label[i] << endl;
+        //cout << "i: ";
+ 	//data[i].printSelf();
+	//cout << "   - cluster " << label[i] << endl;
     }
 }
 
