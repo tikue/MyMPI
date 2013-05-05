@@ -28,4 +28,7 @@ void getdispls(int *displs, int *sendcnts, int numprocs);
 void scatterdata(point *all, int sum, point *pts, int cnt, int np, int rank);
 float eucliddist(point a, point b);
 
+int dnalen;
+int dna_kmeans(int rank, int numprocs, int k, fileinfo info);
+
 #endif

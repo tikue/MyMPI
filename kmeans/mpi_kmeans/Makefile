@@ -1,6 +1,6 @@
 CC=mpicc
 OBJDIR := obj
-OBJS := $(addprefix $(OBJDIR)/, mpi_kmeans.o main.o)
+OBJS := $(addprefix $(OBJDIR)/, mpi_datapoints_kmeans.o mpi_dna_kmeans.o main.o)
 CFLAGS := -std=c99
 
 $(OBJDIR)/%.o: %.c

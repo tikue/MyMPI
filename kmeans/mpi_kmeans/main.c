@@ -8,13 +8,14 @@
 
 void usage(char *name) {
     printf("Usage: %s [-k <k>] [-l <linelen>] "
-            "[-n <numlines>] [-f <filename>]\n", name);
+            "[-n <numlines>] [-f <filename>] [-p|-d]\n", name);
 }
 
 int main(int argc, char *argv[]) {
     // MPI vars
     int numprocs, rank, namelen;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int choice = 0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -28,7 +29,7 @@ int main(int argc, char *argv[]) {
     int k = 20, linelen = 32, numlines = 400;
     char *filename = "input/points.txt";
 
-    while ((opt = getopt(argc, argv, "k:l:n:f:h")) != EOF) {
+    while ((opt = getopt(argc, argv, "k:l:n:f:p:d:h")) != EOF) {
         switch(opt) {
         case 'k':
             k = atoi(optarg); 
@@ -41,6 +42,12 @@ int main(int argc, char *argv[]) {
             break;
         case 'f':
             filename = optarg;
+            break;
+	case 'p':
+	    choice = 0;
+            break;
+        case 'd':
+	    choice = 1;
             break;
         case 'h':
         default:
@@ -61,7 +68,10 @@ int main(int argc, char *argv[]) {
     float clocks_per_sec = 1.0 * CLOCKS_PER_SEC;
     for (int i = 0; i < runs; i++) {
         time_t start = clock();
-        kmeans(rank, numprocs, k, info);
+        if (!choice)
+            kmeans(rank, numprocs, k, info);
+        else
+            dna_kmeans(rank, numprocs, k, info);
         time_t end = clock();
         float runtime = (end - start) / clocks_per_sec;
         mean_time += runtime;
